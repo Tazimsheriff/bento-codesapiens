@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bingo Board – CodeSapiens</title>
+    <meta name="description" content="Your CodeSapiens Networking Bingo board. Scan QR codes to complete challenges." />
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>" />
+    <link rel="stylesheet" href="/src/style.css" />
+</head>
+
+<body>
+    <div class="loading-screen" id="loading-screen">
+        <div class="spinner"></div>
+        <p style="color: var(--text-muted); font-size: 0.85rem;">Loading your board...</p>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="navbar" id="navbar" style="display:none;">
+        <a href="/bingo.html" class="navbar-brand">
+            <div class="logo-icon">🎯</div>
+            <span>CodeSapiens</span>
+        </a>
+        <div class="navbar-nav">
+            <a href="/bingo.html" class="nav-link active">Bingo</a>
+            <a href="/network.html" class="nav-link">Network</a>
+            <button class="btn btn-secondary btn-sm" id="signout-btn">Sign Out</button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="page-container" id="main-content" style="display:none;">
+
+        <!-- Page Header -->
+        <div class="page-header">
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+                <div>
+                    <h1 class="page-title">Bingo Board 🎮</h1>
+                    <p class="page-subtitle" id="greeting">Complete challenges by scanning other participants' QR codes.
+                    </p>
+                </div>
+                <div class="stats-row" style="margin-bottom:0;">
+                    <div class="stat-chip">
+                        <span class="stat-value" id="completed-count">0</span>
+                        <span class="stat-label">/ 9 done</span>
+                    </div>
+                    <a href="/network.html" class="stat-chip" style="text-decoration:none; cursor:pointer;">
+                        <span class="stat-value" id="network-count">0</span>
+                        <span class="stat-label">connections</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bingo Complete Banner -->
+        <div class="bingo-complete-banner" id="bingo-complete-banner">
+            <h2>🏆 BINGO! You did it!</h2>
+            <p>You've completed all 9 challenges. Check your network to see everyone you've connected with!</p>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="progress-section">
+            <div class="progress-header">
+                <span class="progress-label">Challenge Progress</span>
+                <span class="progress-count" id="progress-text">0 / 9</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill" style="width: 0%;"></div>
+            </div>
+        </div>
+
+        <!-- Bingo Grid -->
+        <div class="bingo-grid" id="bingo-grid">
+            <!-- Cells injected by JS -->
+        </div>
+
+    </main>
+
+    <!-- QR Floating Button -->
+    <button class="qr-fab" id="qr-fab" style="display:none;" title="Show my QR code" aria-label="Show my QR code">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7" />
+            <rect x="14" y="3" width="7" height="7" />
+            <rect x="3" y="14" width="7" height="7" />
+            <rect x="14" y="14" width="3" height="3" />
+            <rect x="19" y="14" width="2" height="2" />
+            <rect x="14" y="19" width="2" height="2" />
+            <rect x="19" y="19" width="2" height="2" />
+        </svg>
+    </button>
+
+    <!-- My QR Modal -->
+    <div class="modal-overlay" id="qr-modal">
+        <div class="modal">
+            <button class="modal-close" id="qr-modal-close">✕</button>
+            <h2 class="modal-title">My QR Code</h2>
+            <p class="modal-subtitle">Show this to others so they can scan you.</p>
+            <div class="qr-display">
+                <div class="qr-frame">
+                    <img id="qr-code-img" alt="My QR Code" width="240" height="240" />
+                </div>
+                <div class="qr-user-name" id="qr-user-name"></div>
+                <p style="font-size:0.75rem; color:var(--text-muted); text-align:center;">
+                    🔒 Encodes your User ID only — no personal data exposed
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scanner Modal -->
+    <div class="modal-overlay" id="scanner-modal">
+        <div class="modal" style="max-width:440px;">
+            <button class="modal-close" id="scanner-modal-close">✕</button>
+            <h2 class="modal-title" id="scanner-question-title">Scan QR Code</h2>
+            <p class="modal-subtitle" id="scanner-question-text">Point your camera at another participant's QR code.</p>
+            <div id="scanner-container"></div>
+            <p class="scanner-hint">📷 Allow camera access when prompted</p>
+            <div id="scan-result"
+                style="display:none; margin-top:16px; padding:14px; border-radius:10px; text-align:center; font-weight:600;">
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container"></div>
+
+    <script type="module">
+        import { requireProfile, signOut } from '/src/auth.js'
+        import { getQuestions, getUserScans, performScan, getNetwork } from '/src/bingo.js'
+        import { setupQRButton, startQRScanner, stopQRScanner } from '/src/qr.js'
+        import { showToast, getQuestionEmoji, stripEmoji, celebrate } from '/src/utils.js'
+
+        let currentSession = null
+        let currentProfile = null
+        let questions = []
+        let completedScans = [] // [{question_id, scanned_id}]
+        let activeQuestionId = null
+        let scanCooldown = false
+
+        async function init() {
+            const result = await requireProfile()
+            if (!result) return
+
+            currentSession = result.session
+            currentProfile = result.profile
+
+            // Update greeting
+            document.getElementById('greeting').textContent =
+                `Welcome, ${currentProfile.full_name.split(' ')[0]}! Complete challenges by scanning others' QR codes.`
+
+            // Load data
+            questions = await getQuestions()
+            completedScans = await getUserScans(currentSession.user.id)
+
+            // Get network count
+            const network = await getNetwork(currentSession.user.id)
+            document.getElementById('network-count').textContent = network.length
+
+            // Render board
+            renderBingoGrid()
+            updateProgress()
+
+            // Setup QR button
+            await setupQRButton(currentSession.user.id)
+            document.getElementById('qr-user-name').textContent = currentProfile.full_name
+
+            // Show UI
+            document.getElementById('loading-screen').style.display = 'none'
+            document.getElementById('navbar').style.display = 'flex'
+            document.getElementById('main-content').style.display = 'block'
+            document.getElementById('qr-fab').style.display = 'flex'
+
+            // Sign out
+            document.getElementById('signout-btn').addEventListener('click', signOut)
+
+            // Scanner modal close
+            document.getElementById('scanner-modal-close').addEventListener('click', closeScannerModal)
+            document.getElementById('scanner-modal').addEventListener('click', (e) => {
+                if (e.target === document.getElementById('scanner-modal')) closeScannerModal()
+            })
+        }
+
+        function renderBingoGrid() {
+            const grid = document.getElementById('bingo-grid')
+            grid.innerHTML = ''
+
+            questions.forEach(q => {
+                const scan = completedScans.find(s => s.question_id === q.id)
+                const isCompleted = !!scan
+
+                const cell = document.createElement('div')
+                cell.className = `bingo-cell${isCompleted ? ' completed' : ''}`
+                cell.dataset.questionId = q.id
+
+                const emoji = getQuestionEmoji(q.text)
+                const text = stripEmoji(q.text)
+
+                cell.innerHTML = `
+          <span class="cell-emoji">${emoji}</span>
+          <span class="cell-text">${text}</span>
+          ${isCompleted ? `<span class="cell-scanned-name" id="scanned-name-${q.id}">Loading...</span>` : ''}
+        `
+
+                if (!isCompleted) {
+                    cell.addEventListener('click', () => openScannerForQuestion(q))
+                }
+
+                grid.appendChild(cell)
+            })
+
+            // Load scanned names for completed cells
+            completedScans.forEach(async (scan) => {
+                const nameEl = document.getElementById(`scanned-name-${scan.question_id}`)
+                if (nameEl) {
+                    // We'll load names lazily
+                    nameEl.textContent = '✓ Scanned'
+                }
+            })
+        }
+
+        function updateProgress() {
+            const total = questions.length
+            const done = completedScans.length
+            const pct = total > 0 ? (done / total) * 100 : 0
+
+            document.getElementById('completed-count').textContent = done
+            document.getElementById('progress-text').textContent = `${done} / ${total}`
+            document.getElementById('progress-fill').style.width = `${pct}%`
+
+            if (done === total && total > 0) {
+                document.getElementById('bingo-complete-banner').classList.add('show')
+            }
+        }
+
+        function openScannerForQuestion(question) {
+            activeQuestionId = question.id
+            document.getElementById('scanner-question-title').textContent = 'Scan QR Code'
+            document.getElementById('scanner-question-text').textContent = getQuestionEmoji(question.text) + ' ' + stripEmoji(question.text)
+
+            const resultEl = document.getElementById('scan-result')
+            resultEl.style.display = 'none'
+
+            document.getElementById('scanner-modal').classList.add('active')
+            document.body.style.overflow = 'hidden'
+
+            startQRScanner('scanner-container', handleScanResult, (err) => {
+                showToast('Camera access denied. Please allow camera permissions.', 'error')
+                closeScannerModal()
+            })
+        }
+
+        async function handleScanResult(scannedUserId) {
+            if (scanCooldown || !activeQuestionId) return
+            scanCooldown = true
+
+            const resultEl = document.getElementById('scan-result')
+            resultEl.style.display = 'block'
+            resultEl.style.background = 'rgba(0, 212, 255, 0.08)'
+            resultEl.style.border = '1px solid rgba(0, 212, 255, 0.3)'
+            resultEl.style.color = 'var(--accent-cyan)'
+            resultEl.textContent = '⏳ Validating...'
+
+            await stopQRScanner()
+
+            const result = await performScan(
+                currentSession.user.id,
+                scannedUserId,
+                activeQuestionId
+            )
+
+            if (result.success) {
+                resultEl.style.background = 'rgba(0, 255, 136, 0.08)'
+                resultEl.style.border = '1px solid rgba(0, 255, 136, 0.3)'
+                resultEl.style.color = 'var(--accent-green)'
+                resultEl.textContent = `✅ Scanned ${result.profile.full_name}!`
+
+                // Update local state
+                completedScans.push({ question_id: activeQuestionId, scanned_id: scannedUserId })
+
+                // Update cell
+                const cell = document.querySelector(`[data-question-id="${activeQuestionId}"]`)
+                if (cell) {
+                    cell.classList.add('completing')
+                    setTimeout(() => {
+                        cell.classList.add('completed')
+                        cell.classList.remove('completing')
+                        cell.style.cursor = 'default'
+                        cell.innerHTML += `<span class="cell-scanned-name">✓ ${result.profile.full_name.split(' ')[0]}</span>`
+                        cell.replaceWith(cell.cloneNode(true)) // Remove click listener
+                    }, 200)
+                }
+
+                updateProgress()
+
+                // Update network count
+                const network = await getNetwork(currentSession.user.id)
+                document.getElementById('network-count').textContent = network.length
+
+                showToast(`Connected with ${result.profile.full_name}! 🎉`, 'success')
+
+                // Celebrate if bingo complete
+                if (completedScans.length === questions.length) {
+                    setTimeout(celebrate, 500)
+                }
+
+                setTimeout(closeScannerModal, 1500)
+            } else {
+                resultEl.style.background = 'rgba(255, 71, 87, 0.08)'
+                resultEl.style.border = '1px solid rgba(255, 71, 87, 0.3)'
+                resultEl.style.color = 'var(--error)'
+                resultEl.textContent = `❌ ${result.error}`
+
+                setTimeout(() => {
+                    scanCooldown = false
+                    // Restart scanner
+                    startQRScanner('scanner-container', handleScanResult, () => closeScannerModal())
+                    resultEl.style.display = 'none'
+                }, 2500)
+                return
+            }
+
+            scanCooldown = false
+        }
+
+        function closeScannerModal() {
+            stopQRScanner()
+            document.getElementById('scanner-modal').classList.remove('active')
+            document.body.style.overflow = ''
+            activeQuestionId = null
+            scanCooldown = false
+        }
+
+        init()
+    </script>
+</body>
+
+</html>

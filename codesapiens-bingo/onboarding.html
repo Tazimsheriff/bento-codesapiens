@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Setup Profile – CodeSapiens Bingo</title>
+    <meta name="description" content="Complete your profile to join the CodeSapiens Networking Bingo." />
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>" />
+    <link rel="stylesheet" href="/src/style.css" />
+</head>
+
+<body>
+    <div class="loading-screen" id="loading-screen">
+        <div class="spinner"></div>
+        <p style="color: var(--text-muted); font-size: 0.85rem;">Loading...</p>
+    </div>
+
+    <main id="main-content"
+        style="display:none; min-height:100vh; display:none; align-items:center; justify-content:center; padding:40px 20px; position:relative; z-index:1;">
+        <div style="max-width:480px; width:100%;">
+
+            <!-- Header -->
+            <div style="text-align:center; margin-bottom:32px;">
+                <div class="hero-logo" style="width:64px; height:64px; font-size:28px; margin:0 auto 16px;">🎯</div>
+                <h1 style="font-size:1.8rem; margin-bottom:8px;">Complete Your Profile</h1>
+                <p style="color:var(--text-secondary); font-size:0.9rem;">
+                    Set up your profile to get your personal QR code and start playing.
+                </p>
+            </div>
+
+            <!-- Form Card -->
+            <div class="card" style="padding:32px;">
+                <div class="form-stack">
+                    <div class="input-group">
+                        <label for="full-name">Full Name *</label>
+                        <input type="text" id="full-name" placeholder="e.g. Alex Johnson" autocomplete="name"
+                            required />
+                    </div>
+
+                    <div class="input-group">
+                        <label for="linkedin-url">LinkedIn Profile URL *</label>
+                        <input type="url" id="linkedin-url" placeholder="https://linkedin.com/in/yourname"
+                            autocomplete="url" required />
+                    </div>
+
+                    <div class="input-group">
+                        <label for="github-url">GitHub Profile URL *</label>
+                        <input type="url" id="github-url" placeholder="https://github.com/yourname" autocomplete="url"
+                            required />
+                    </div>
+
+                    <div id="form-error"
+                        style="display:none; padding:12px 16px; background:rgba(255,71,87,0.08); border:1px solid rgba(255,71,87,0.3); border-radius:10px; color:var(--error); font-size:0.85rem;">
+                    </div>
+
+                    <button class="btn btn-primary btn-lg" id="save-btn" style="width:100%; margin-top:8px;">
+                        <span id="save-btn-text">Get My QR Code 🎯</span>
+                        <div class="spinner" id="save-spinner"
+                            style="display:none; width:18px; height:18px; border-width:2px;"></div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Info -->
+            <p style="text-align:center; font-size:0.8rem; color:var(--text-muted); margin-top:16px;">
+                🔒 Your QR code will only encode your User ID — never your raw profile data.
+            </p>
+        </div>
+    </main>
+
+    <div class="toast-container"></div>
+
+    <script type="module">
+        import { requireAuth, getCurrentProfile, saveProfile } from '/src/auth.js'
+        import { showToast, isValidLinkedIn, isValidGitHub, isValidUrl } from '/src/utils.js'
+
+        async function init() {
+            const session = await requireAuth('/')
+            if (!session) return
+
+            // If profile already exists, go to bingo
+            const profile = await getCurrentProfile()
+            if (profile) {
+                window.location.href = '/bingo.html'
+                return
+            }
+
+            document.getElementById('loading-screen').style.display = 'none'
+            document.getElementById('main-content').style.display = 'flex'
+        }
+
+        document.getElementById('save-btn').addEventListener('click', async () => {
+            const fullName = document.getElementById('full-name').value.trim()
+            const linkedinUrl = document.getElementById('linkedin-url').value.trim()
+            const githubUrl = document.getElementById('github-url').value.trim()
+            const errorEl = document.getElementById('form-error')
+
+            // Validation
+            if (!fullName) {
+                showError('Please enter your full name.')
+                return
+            }
+            if (!linkedinUrl || !isValidUrl(linkedinUrl) || !isValidLinkedIn(linkedinUrl)) {
+                showError('Please enter a valid LinkedIn profile URL (e.g. https://linkedin.com/in/yourname)')
+                return
+            }
+            if (!githubUrl || !isValidUrl(githubUrl) || !isValidGitHub(githubUrl)) {
+                showError('Please enter a valid GitHub profile URL (e.g. https://github.com/yourname)')
+                return
+            }
+
+            errorEl.style.display = 'none'
+            setLoading(true)
+
+            const { data, error } = await saveProfile(fullName, linkedinUrl, githubUrl)
+
+            setLoading(false)
+
+            if (error) {
+                showError(error.message || 'Failed to save profile. Please try again.')
+                return
+            }
+
+            showToast('Profile saved! Loading your bingo board...', 'success')
+            setTimeout(() => { window.location.href = '/bingo.html' }, 1000)
+        })
+
+        function showError(msg) {
+            const el = document.getElementById('form-error')
+            el.textContent = msg
+            el.style.display = 'block'
+        }
+
+        function setLoading(loading) {
+            const btn = document.getElementById('save-btn')
+            const text = document.getElementById('save-btn-text')
+            const spinner = document.getElementById('save-spinner')
+            btn.disabled = loading
+            text.style.display = loading ? 'none' : 'block'
+            spinner.style.display = loading ? 'block' : 'none'
+        }
+
+        init()
+    </script>
+</body>
+
+</html>

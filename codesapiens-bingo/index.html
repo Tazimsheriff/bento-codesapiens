@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CodeSapiens Bingo – Gamified Networking</title>
+  <meta name="description" content="A gamified networking accelerator for tech events. Scan QR codes, complete bingo challenges, and build your real network." />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>" />
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <!-- Loading Screen -->
+  <div class="loading-screen" id="loading-screen">
+    <div class="spinner"></div>
+    <p style="color: var(--text-muted); font-size: 0.85rem;">Loading...</p>
+  </div>
+
+  <!-- Hero -->
+  <main class="hero" id="main-content" style="display:none;">
+    <div class="hero-logo">🎯</div>
+    <div class="hero-tag">⚡ CodeSapiens · Event 2026</div>
+    <h1 class="hero-title">Networking<br/>Bingo</h1>
+    <p class="hero-subtitle">
+      Scan. Connect. Conquer. Build your real tech network through gamified challenges at the event.
+    </p>
+
+    <!-- Login Form -->
+    <div class="hero-form fade-in-up">
+      <h2>Join the Game</h2>
+      <p>Enter your email to get a magic link — no password needed.</p>
+      <div class="form-stack">
+        <div class="input-group">
+          <label for="email-input">Email Address</label>
+          <input
+            type="email"
+            id="email-input"
+            placeholder="you@example.com"
+            autocomplete="email"
+          />
+        </div>
+        <button class="btn btn-primary btn-lg" id="login-btn" style="width:100%;">
+          <span id="login-btn-text">Send Magic Link ✨</span>
+          <div class="spinner" id="login-spinner" style="display:none; width:18px; height:18px; border-width:2px;"></div>
+        </button>
+        <div id="login-success" style="display:none; text-align:center; padding:12px; background:rgba(0,255,136,0.08); border:1px solid rgba(0,255,136,0.3); border-radius:12px; color:var(--accent-green); font-size:0.9rem;">
+          ✅ Check your email for the magic link!
+        </div>
+      </div>
+    </div>
+
+    <!-- Features -->
+    <div style="display:flex; gap:20px; margin-top:48px; flex-wrap:wrap; justify-content:center; max-width:600px;">
+      <div style="text-align:center; flex:1; min-width:120px;">
+        <div style="font-size:28px; margin-bottom:8px;">📱</div>
+        <div style="font-size:0.8rem; color:var(--text-secondary); font-weight:500;">Scan QR Codes</div>
+      </div>
+      <div style="text-align:center; flex:1; min-width:120px;">
+        <div style="font-size:28px; margin-bottom:8px;">🎮</div>
+        <div style="font-size:0.8rem; color:var(--text-secondary); font-weight:500;">Play Bingo</div>
+      </div>
+      <div style="text-align:center; flex:1; min-width:120px;">
+        <div style="font-size:28px; margin-bottom:8px;">🤝</div>
+        <div style="font-size:0.8rem; color:var(--text-secondary); font-weight:500;">Build Network</div>
+      </div>
+      <div style="text-align:center; flex:1; min-width:120px;">
+        <div style="font-size:28px; margin-bottom:8px;">🏆</div>
+        <div style="font-size:0.8rem; color:var(--text-secondary); font-weight:500;">Win Together</div>
+      </div>
+    </div>
+  </main>
+
+  <div class="toast-container"></div>
+
+  <script type="module">
+    import { getSession, getCurrentProfile, signInWithEmail } from '/src/auth.js'
+    import { showToast } from '/src/utils.js'
+
+    async function init() {
+      const loadingScreen = document.getElementById('loading-screen')
+      const mainContent = document.getElementById('main-content')
+
+      // Check if already logged in
+      const session = await getSession()
+      if (session) {
+        const profile = await getCurrentProfile()
+        if (profile) {
+          window.location.href = '/bingo.html'
+          return
+        } else {
+          window.location.href = '/onboarding.html'
+          return
+        }
+      }
+
+      loadingScreen.style.display = 'none'
+      mainContent.style.display = 'flex'
+    }
+
+    // Login handler
+    document.getElementById('login-btn').addEventListener('click', async () => {
+      const email = document.getElementById('email-input').value.trim()
+      if (!email) {
+        showToast('Please enter your email address', 'error')
+        return
+      }
+
+      const btn = document.getElementById('login-btn')
+      const btnText = document.getElementById('login-btn-text')
+      const spinner = document.getElementById('login-spinner')
+
+      btn.disabled = true
+      btnText.style.display = 'none'
+      spinner.style.display = 'block'
+
+      const { error } = await signInWithEmail(email)
+
+      btn.disabled = false
+      btnText.style.display = 'block'
+      spinner.style.display = 'none'
+
+      if (error) {
+        showToast(error.message || 'Failed to send magic link', 'error')
+      } else {
+        document.getElementById('login-success').style.display = 'block'
+        document.getElementById('login-btn').style.display = 'none'
+      }
+    })
+
+    // Allow Enter key
+    document.getElementById('email-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('login-btn').click()
+    })
+
+    init()
+  </script>
+</body>
+</html>
