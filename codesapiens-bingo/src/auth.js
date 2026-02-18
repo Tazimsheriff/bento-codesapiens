@@ -44,15 +44,25 @@ export async function requireProfile() {
     return { session, profile }
 }
 
-// Sign in with magic link
-export async function signInWithEmail(email) {
-    const { error } = await supabase.auth.signInWithOtp({
+// Sign up with email and password
+export async function signUp(email, password) {
+    const { data, error } = await supabase.auth.signUp({
         email,
+        password,
         options: {
             emailRedirectTo: `${window.location.origin}/onboarding.html`
         }
     })
-    return { error }
+    return { data, error }
+}
+
+// Sign in with email and password
+export async function signIn(email, password) {
+    const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+    })
+    return { data, error }
 }
 
 // Sign out
@@ -84,3 +94,4 @@ export async function saveProfile(fullName, linkedinUrl, githubUrl) {
 export function onAuthStateChange(callback) {
     return supabase.auth.onAuthStateChange(callback)
 }
+
