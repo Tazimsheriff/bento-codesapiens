@@ -34,9 +34,14 @@
 
   --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+
+  --font-cyber: 'Space Grotesk', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
 }
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -75,7 +80,10 @@ body::before {
 /* ============================================
    TYPOGRAPHY
    ============================================ */
-h1, h2, h3, h4 {
+h1,
+h2,
+h3,
+h4 {
   font-family: 'Space Grotesk', sans-serif;
   font-weight: 700;
   line-height: 1.2;
@@ -252,15 +260,10 @@ a:hover {
   text-decoration: none;
 }
 
-.navbar-brand .logo-icon {
-  width: 32px;
+.navbar-brand .logo-img {
   height: 32px;
-  background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
+  width: auto;
+  display: block;
 }
 
 .navbar-nav {
@@ -279,7 +282,8 @@ a:hover {
   text-decoration: none;
 }
 
-.nav-link:hover, .nav-link.active {
+.nav-link:hover,
+.nav-link.active {
   color: var(--text-primary);
   background: var(--bg-card);
 }
@@ -310,6 +314,43 @@ a:hover {
   animation: pulse-glow 2s infinite;
 }
 
+.qr-fab::before {
+  content: '';
+  position: absolute;
+  inset: -10px;
+  border: 2px solid var(--accent-green);
+  border-radius: 50%;
+  animation: radar-pulse 2s infinite;
+  opacity: 0;
+  pointer-events: none;
+}
+
+@keyframes radar-pulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.8;
+  }
+
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    box-shadow: 0 4px 24px rgba(0, 255, 136, 0.4);
+    transform: scale(1);
+  }
+
+  50% {
+    box-shadow: 0 4px 40px rgba(0, 255, 136, 0.7);
+    transform: scale(1.05);
+  }
+}
+
 .qr-fab:hover {
   transform: scale(1.1);
   box-shadow: 0 8px 36px rgba(0, 255, 136, 0.6);
@@ -322,8 +363,15 @@ a:hover {
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 4px 24px rgba(0, 255, 136, 0.4); }
-  50% { box-shadow: 0 4px 36px rgba(0, 255, 136, 0.7); }
+
+  0%,
+  100% {
+    box-shadow: 0 4px 24px rgba(0, 255, 136, 0.4);
+  }
+
+  50% {
+    box-shadow: 0 4px 36px rgba(0, 255, 136, 0.7);
+  }
 }
 
 /* ============================================
@@ -351,14 +399,30 @@ a:hover {
 
 .modal {
   background: var(--bg-secondary);
-  border: 1px solid var(--border);
+  border: 1px solid var(--accent-green);
   border-radius: var(--radius-xl);
   padding: 32px;
-  max-width: 400px;
+  max-width: 440px;
   width: 100%;
   position: relative;
   transform: scale(0.9) translateY(20px);
   transition: var(--transition-slow);
+  box-shadow: 0 0 50px rgba(0, 255, 136, 0.15);
+}
+
+/* Terminal Popup Effect */
+.modal::before {
+  content: 'SYSTEM_LINK_ACTIVE ::: ENCRYPTED_SCAN_READY';
+  position: absolute;
+  top: -20px;
+  left: 20px;
+  background: var(--accent-green);
+  color: #000;
+  padding: 2px 10px;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 800;
+  border-radius: 4px;
 }
 
 .modal-overlay.active .modal {
@@ -815,7 +879,9 @@ a:hover {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .loading-screen {
@@ -891,6 +957,7 @@ a:hover {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -898,9 +965,17 @@ a:hover {
 }
 
 @keyframes cellComplete {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.05);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 .fade-in-up {
@@ -929,20 +1004,21 @@ a:hover {
 .hero-logo {
   width: 80px;
   height: 80px;
-  background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));
   border-radius: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 36px;
   margin: 0 auto 24px;
-  box-shadow: 0 0 60px rgba(0, 255, 136, 0.3);
   animation: float 3s ease-in-out infinite;
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-8px);
+  }
 }
 
 .hero-tag {

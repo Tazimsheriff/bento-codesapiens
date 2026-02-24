@@ -28,12 +28,12 @@ export async function getUserScans(userId) {
     return data
 }
 
-// Look up a profile by ID (for QR scan validation)
-export async function getProfileById(userId) {
+// Look up a profile by token (for QR scan validation)
+export async function getProfileByToken(token) {
     const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', userId)
+        .eq('qr_token', token)
         .single()
 
     if (error) return null
@@ -41,13 +41,21 @@ export async function getProfileById(userId) {
 }
 
 // Perform a scan: validate and record
-export async function performScan(scannerId, scannedUserId, questionId) {
-    // 1. Prevent self-scan
+export async function performScan(scannerId, scannedToken, questionId) {
+    // 1. Validate scanned user exists by token
+    const scannedProfile = await getProfileByToken(scannedToken)
+    if (!scannedProfile) {
+        return { success: false, error: 'Invalid QR code – user not found.' }
+    }
+
+    const scannedUserId = scannedProfile.id
+
+    // 2. Prevent self-scan
     if (scannerId === scannedUserId) {
         return { success: false, error: "You can't scan yourself! 😄" }
     }
 
-    // 2. Check if question already completed
+    // 3. Check if question already completed
     const { data: existingScan } = await supabase
         .from('scans')
         .select('id')
@@ -57,12 +65,6 @@ export async function performScan(scannerId, scannedUserId, questionId) {
 
     if (existingScan) {
         return { success: false, error: 'You already completed this challenge! ✅' }
-    }
-
-    // 3. Validate scanned user exists
-    const scannedProfile = await getProfileById(scannedUserId)
-    if (!scannedProfile) {
-        return { success: false, error: 'Invalid QR code – user not found.' }
     }
 
     // 4. Insert scan record
@@ -79,6 +81,9 @@ export async function performScan(scannerId, scannedUserId, questionId) {
         return { success: false, error: 'Scan failed. Please try again.' }
     }
 
+    // 5. Update XP for the scanner
+    await supabase.rpc('increment_xp', { user_id: scannerId, amount: 10 })
+
     return { success: true, profile: scannedProfile }
 }
 
@@ -92,8 +97,7 @@ export async function getNetwork(userId) {
       profiles!scans_scanned_id_fkey (
         id,
         full_name,
-        linkedin_url,
-        github_url
+        linkedin_url
       )
     `)
         .eq('scanner_id', userId)
@@ -104,7 +108,7 @@ export async function getNetwork(userId) {
         return []
     }
 
-    // Deduplicate by scanned_id (same person might be scanned for multiple questions)
+    // Deduplicate and map
     const seen = new Set()
     return data.filter(item => {
         if (seen.has(item.scanned_id)) return false

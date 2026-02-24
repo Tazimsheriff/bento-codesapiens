@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Bingo Board – CodeSapiens</title>
+    <title>Bingo Board – CyberExplore TEMS</title>
     <meta name="description" content="Your CodeSapiens Networking Bingo board. Scan QR codes to complete challenges." />
     <link rel="icon" type="image/svg+xml"
         href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>" />
@@ -20,12 +20,13 @@
     <!-- Navbar -->
     <nav class="navbar" id="navbar" style="display:none;">
         <a href="/bingo.html" class="navbar-brand">
-            <div class="logo-icon">🎯</div>
-            <span>CodeSapiens</span>
+            <img src="/public/assets/logo.png" alt="IEEE TEMS Logo" class="logo-img">
+            <span>CyberExplore TEMS</span>
         </a>
         <div class="navbar-nav">
             <a href="/bingo.html" class="nav-link active">Bingo</a>
             <a href="/network.html" class="nav-link">Network</a>
+            <a href="/leaderboard.html" class="nav-link">Leaderboard</a>
             <button class="btn btn-secondary btn-sm" id="signout-btn">Sign Out</button>
         </div>
     </nav>
@@ -44,7 +45,7 @@
                 <div class="stats-row" style="margin-bottom:0;">
                     <div class="stat-chip">
                         <span class="stat-value" id="completed-count">0</span>
-                        <span class="stat-label">/ 9 done</span>
+                        <span class="stat-label" id="goal-count">/ 9 done</span>
                     </div>
                     <a href="/network.html" class="stat-chip" style="text-decoration:none; cursor:pointer;">
                         <span class="stat-value" id="network-count">0</span>
@@ -163,7 +164,7 @@
             updateProgress()
 
             // Setup QR button
-            await setupQRButton(currentSession.user.id)
+            await setupQRButton(currentProfile.qr_token)
             document.getElementById('qr-user-name').textContent = currentProfile.full_name
 
             // Show UI
@@ -171,6 +172,16 @@
             document.getElementById('navbar').style.display = 'flex'
             document.getElementById('main-content').style.display = 'block'
             document.getElementById('qr-fab').style.display = 'flex'
+
+            // Admin link?
+            if (currentProfile.is_admin) {
+                const nav = document.querySelector('.navbar-nav')
+                const adminLink = document.createElement('a')
+                adminLink.href = '/admin.html'
+                adminLink.className = 'nav-link'
+                adminLink.innerText = 'Admin'
+                nav.insertBefore(adminLink, document.getElementById('signout-btn'))
+            }
 
             // Sign out
             document.getElementById('signout-btn').addEventListener('click', signOut)
@@ -229,6 +240,9 @@
             document.getElementById('progress-text').textContent = `${done} / ${total}`
             document.getElementById('progress-fill').style.width = `${pct}%`
 
+            const goalLabel = document.getElementById('goal-count')
+            if (goalLabel) goalLabel.textContent = `/ ${total} done`
+
             if (done === total && total > 0) {
                 document.getElementById('bingo-complete-banner').classList.add('show')
             }
@@ -272,9 +286,8 @@
 
             if (result.success) {
                 resultEl.style.background = 'rgba(0, 255, 136, 0.08)'
-                resultEl.style.border = '1px solid rgba(0, 255, 136, 0.3)'
                 resultEl.style.color = 'var(--accent-green)'
-                resultEl.textContent = `✅ Scanned ${result.profile.full_name}!`
+                resultEl.textContent = `🤝 Handshake Established! Scanned ${result.profile.full_name}!`
 
                 // Update local state
                 completedScans.push({ question_id: activeQuestionId, scanned_id: scannedUserId })

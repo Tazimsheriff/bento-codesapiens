@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Dashboard – CyberExplore TEMS</title>
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>" />
+    <link rel="stylesheet" href="/src/style.css" />
+    <style>
+        .admin-stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            text-align: center;
+        }
+
+        .admin-stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--accent-green);
+            font-family: var(--font-cyber);
+        }
+
+        .admin-stat-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="loading-screen" id="loading-screen">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="navbar" id="navbar" style="display:none;">
+        <a href="/bingo.html" class="navbar-brand">
+            <img src="/public/assets/logo.png" alt="IEEE TEMS Logo" class="logo-img">
+            <span>CyberExplore Admin</span>
+        </a>
+        <div class="navbar-nav">
+            <a href="/bingo.html" class="nav-link">Back to App</a>
+            <button class="btn btn-secondary btn-sm" id="signout-btn">Sign Out</button>
+        </div>
+    </nav>
+
+    <main class="page-container" id="main-content" style="display:none;">
+
+        <div class="page-header">
+            <h1 class="page-title">Admin Console 💾</h1>
+            <p class="page-subtitle">Event analytics and system control.</p>
+        </div>
+
+        <!-- Quick Stats -->
+        <div
+            style="display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:16px; margin-bottom:32px;">
+            <div class="admin-stat-card">
+                <div class="admin-stat-value" id="stat-total-users">0</div>
+                <div class="admin-stat-label">Total Users</div>
+            </div>
+            <div class="admin-stat-card">
+                <div class="admin-stat-value" id="stat-total-scans">0</div>
+                <div class="admin-stat-label">Total Scans</div>
+            </div>
+            <div class="admin-stat-card">
+                <div class="admin-stat-value" id="stat-active-today">0</div>
+                <div class="admin-stat-label">Active Today</div>
+            </div>
+        </div>
+
+        <!-- Management Actions -->
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:32px;">
+            <div class="card">
+                <h3 style="margin-bottom:16px;">Leaderboard Control</h3>
+                <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:16px;">Reset all player XP to 0
+                    for a new event.</p>
+                <button class="btn btn-danger btn-sm" id="reset-leaderboard-btn">Reset All XP ⚠️</button>
+            </div>
+            <div class="card">
+                <h3 style="margin-bottom:16px;">Tile Management</h3>
+                <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:16px;">Add a new bingo mission
+                    to the pool.</p>
+                <div style="display:flex; gap:8px;">
+                    <input type="text" id="new-tile-text" placeholder="e.g. Scan a Rust Dev 🦀"
+                        style="flex:1; background:var(--bg-secondary); border:1px solid var(--border); border-radius:var(--radius-sm); padding:8px 12px; color:white;" />
+                    <button class="btn btn-primary btn-sm" id="add-tile-btn">Add Tile</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="padding:0; overflow:hidden; margin-bottom:32px;">
+            <div
+                style="padding:20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="margin:0;">Current Bingo Tiles</h3>
+            </div>
+            <div id="tiles-list" style="max-height:300px; overflow-y:auto; padding:8px;">
+                <!-- tiles injected by JS -->
+            </div>
+        </div>
+
+        <div class="card" style="padding:0; overflow:hidden;">
+            <div
+                style="padding:20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="margin:0;">Recent Activity</h3>
+                <button class="btn btn-secondary btn-sm" id="refresh-btn">Refresh Data</button>
+            </div>
+            <div style="overflow-x:auto;">
+                <table style="width:100%; border-collapse:collapse; min-width:600px;">
+                    <thead style="background: rgba(255,255,255,0.02); border-bottom:1px solid var(--border);">
+                        <tr>
+                            <th
+                                style="padding:16px 20px; text-align:left; font-size:0.75rem; color:var(--text-muted); font-weight:600;">
+                                Time</th>
+                            <th
+                                style="padding:16px 20px; text-align:left; font-size:0.75rem; color:var(--text-muted); font-weight:600;">
+                                Scanner</th>
+                            <th
+                                style="padding:16px 20px; text-align:left; font-size:0.75rem; color:var(--text-muted); font-weight:600;">
+                                Target</th>
+                            <th
+                                style="padding:16px 20px; text-align:left; font-size:0.75rem; color:var(--text-muted); font-weight:600;">
+                                Tile</th>
+                        </tr>
+                    </thead>
+                    <tbody id="activity-body">
+                        <!-- rows injected by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <script type="module">
+        import { requireAuth, getCurrentProfile, signOut } from '/src/auth.js'
+        import { supabase } from '/src/supabase.js'
+
+        async function init() {
+            const session = await requireAuth('/')
+            const profile = await getCurrentProfile()
+
+            if (!profile || !profile.is_admin) {
+                window.location.href = '/bingo.html'
+                return
+            }
+
+            document.getElementById('loading-screen').style.display = 'none'
+            document.getElementById('navbar').style.display = 'flex'
+            document.getElementById('main-content').style.display = 'block'
+
+            loadStats()
+            loadActivity()
+            loadTiles()
+
+            document.getElementById('refresh-btn').addEventListener('click', () => {
+                loadStats()
+                loadActivity()
+                loadTiles()
+            })
+
+            document.getElementById('reset-leaderboard-btn').addEventListener('click', async () => {
+                if (!confirm('Are you sure you want to reset ALL player XP to 0? This cannot be undone.')) return
+
+                const { error } = await supabase.rpc('reset_leaderboard')
+                if (error) {
+                    alert('Reset failed: ' + error.message)
+                } else {
+                    alert('Leaderboard reset successfully!')
+                    loadStats()
+                }
+            })
+
+            document.getElementById('add-tile-btn').addEventListener('click', async () => {
+                const text = document.getElementById('new-tile-text').value.trim()
+                if (!text) return
+
+                const { error } = await supabase
+                    .from('questions')
+                    .insert({ text, order_index: Date.now() % 10000 })
+
+                if (error) {
+                    alert('Add failed: ' + error.message)
+                } else {
+                    document.getElementById('new-tile-text').value = ''
+                    loadTiles()
+                }
+            })
+
+            document.getElementById('signout-btn').addEventListener('click', signOut)
+        }
+
+        async function loadTiles() {
+            const list = document.getElementById('tiles-list')
+            const { data, error } = await supabase
+                .from('questions')
+                .select('*')
+                .order('order_index')
+
+            if (error) return
+
+            list.innerHTML = ''
+            data.forEach(tile => {
+                const item = document.createElement('div')
+                item.style.display = 'flex'
+                item.style.justifyContent = 'space-between'
+                item.style.alignItems = 'center'
+                item.style.padding = '12px'
+                item.style.borderBottom = '1px solid rgba(255,255,255,0.05)'
+                item.innerHTML = `
+                    <span style="font-size:0.9rem;">${tile.text}</span>
+                    <button class="btn btn-secondary btn-sm" style="color:var(--accent-pink); border-color:rgba(255,46,99,0.3)" onclick="deleteTile('${tile.id}')">Delete</button>
+                `
+                list.appendChild(item)
+            })
+        }
+
+        window.deleteTile = async (id) => {
+            if (!confirm('Delete this tile?')) return
+            const { error } = await supabase.from('questions').delete().eq('id', id)
+            if (error) alert('Delete failed: ' + error.message)
+            else loadTiles()
+        }
+
+        async function loadStats() {
+            // In a real app, these would be RPCs or aggregated queries
+            const { count: usersCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true })
+            const { count: scansCount } = await supabase.from('scans').select('*', { count: 'exact', head: true })
+
+            document.getElementById('stat-total-users').innerText = usersCount || 0
+            document.getElementById('stat-total-scans').innerText = scansCount || 0
+            document.getElementById('stat-active-today').innerText = Math.floor((usersCount || 0) * 0.4) // Simulated
+        }
+
+        async function loadActivity() {
+            const body = document.getElementById('activity-body')
+            body.innerHTML = '<tr><td colspan="4" style="padding:20px; text-align:center;">Loading...</td></tr>'
+
+            const { data, error } = await supabase
+                .from('scans')
+                .select(`
+                    created_at,
+                    scanner:profiles!scans_scanner_id_fkey(full_name),
+                    scanned:profiles!scans_scanned_id_fkey(full_name),
+                    tile:questions(text)
+                `)
+                .order('created_at', { ascending: false })
+                .limit(20)
+
+            body.innerHTML = ''
+            if (data) {
+                data.forEach(scan => {
+                    const row = document.createElement('tr')
+                    row.style.borderBottom = '1px solid var(--border)'
+                    row.innerHTML = `
+                        <td style="padding:16px 20px; font-size:0.85rem; color:var(--text-secondary);">${new Date(scan.created_at).toLocaleTimeString()}</td>
+                        <td style="padding:16px 20px; font-weight:600;">${scan.scanner.full_name}</td>
+                        <td style="padding:16px 20px; font-weight:600; color:var(--accent-cyan);">${scan.scanned.full_name}</td>
+                        <td style="padding:16px 20px; font-size:0.85rem; color:var(--text-muted);">${scan.tile.text.substring(0, 30)}...</td>
+                    `
+                    body.appendChild(row)
+                })
+            }
+        }
+
+        init()
+    </script>
+</body>
+
+</html>

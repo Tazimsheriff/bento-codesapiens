@@ -3,10 +3,10 @@ import { Html5Qrcode } from 'html5-qrcode'
 
 let qrScannerInstance = null
 
-// Generate QR code as data URL from userId
-export async function generateQRCode(userId) {
+// Generate QR code as data URL from qrToken
+export async function generateQRCode(qrToken) {
     try {
-        const dataUrl = await QRCode.toDataURL(userId, {
+        const dataUrl = await QRCode.toDataURL(qrToken, {
             width: 280,
             margin: 2,
             color: {

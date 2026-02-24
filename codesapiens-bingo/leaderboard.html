@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Leaderboard – CyberExplore TEMS</title>
+    <meta name="description" content="CyberExplore TEMS Global Leaderboard. Top Hackers and Network Masters." />
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>" />
+    <link rel="stylesheet" href="/src/style.css" />
+</head>
+
+<body>
+    <div class="loading-screen" id="loading-screen">
+        <div class="spinner"></div>
+        <p style="color: var(--text-muted); font-size: 0.85rem;">Loading leaderboard...</p>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="navbar" id="navbar" style="display:none;">
+        <a href="/bingo.html" class="navbar-brand">
+            <img src="/public/assets/logo.png" alt="IEEE TEMS Logo" class="logo-img">
+            <span>CyberExplore TEMS</span>
+        </a>
+        <div class="navbar-nav">
+            <a href="/bingo.html" class="nav-link">Bingo</a>
+            <a href="/network.html" class="nav-link">Network</a>
+            <a href="/leaderboard.html" class="nav-link active">Leaderboard</a>
+            <button class="btn btn-secondary btn-sm" id="signout-btn">Sign Out</button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="page-container" id="main-content" style="display:none;">
+
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">Leaderboard 🏆</h1>
+            <p class="page-subtitle">Track the top event explorers and network masters.</p>
+        </div>
+
+        <!-- Leaderboard Tabs -->
+        <div style="display:flex; gap:12px; margin-bottom:24px;">
+            <button class="btn btn-secondary btn-sm active" id="tab-xp">Global Rank</button>
+            <button class="btn btn-secondary btn-sm" id="tab-scans">Network Masters</button>
+        </div>
+
+        <!-- Leaderboard Table -->
+        <div class="card" style="padding:0; overflow:hidden;">
+            <table style="width:100%; border-collapse:collapse; text-align:left;">
+                <thead style="background: rgba(255,255,255,0.02); border-bottom:1px solid var(--border);">
+                    <tr>
+                        <th
+                            style="padding:16px 20px; font-size:0.8rem; color:var(--text-muted); font-weight:600; text-transform:uppercase;">
+                            Rank</th>
+                        <th
+                            style="padding:16px 20px; font-size:0.8rem; color:var(--text-muted); font-weight:600; text-transform:uppercase;">
+                            Explorer</th>
+                        <th style="padding:16px 20px; font-size:0.8rem; color:var(--text-muted); font-weight:600; text-transform:uppercase; text-align:right;"
+                            id="stat-col-header">XP</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboard-body">
+                    <!-- Rows injected by JS -->
+                </tbody>
+            </table>
+        </div>
+
+    </main>
+
+    <div class="toast-container"></div>
+
+    <script type="module">
+        import { requireAuth, signOut, getCurrentProfile } from '/src/auth.js'
+        import { supabase } from '/src/supabase.js'
+        import { showToast, getInitials } from '/src/utils.js'
+
+        async function init() {
+            await requireAuth('/')
+            const profile = await getCurrentProfile()
+
+            document.getElementById('loading-screen').style.display = 'none'
+            document.getElementById('navbar').style.display = 'flex'
+            document.getElementById('main-content').style.display = 'block'
+
+            loadLeaderboard('xp')
+
+            document.getElementById('tab-xp').addEventListener('click', () => {
+                switchTab('xp')
+            })
+            document.getElementById('tab-scans').addEventListener('click', () => {
+                switchTab('scans')
+            })
+
+            document.getElementById('signout-btn').addEventListener('click', signOut)
+        }
+
+        async function loadLeaderboard(metric) {
+            const body = document.getElementById('leaderboard-body')
+            body.innerHTML = '<tr><td colspan="3" style="padding:40px; text-align:center;"><div class="spinner" style="margin:0 auto;"></div></td></tr>'
+
+            let data;
+            if (metric === 'xp') {
+                const { data: xpData, error } = await supabase
+                    .from('profiles')
+                    .select('full_name, xp')
+                    .order('xp', { ascending: false })
+                    .limit(50)
+                data = xpData
+            } else {
+                // Approximate network size via RPC or subquery if needed, 
+                // for now let's just use XP as it's our primary metric
+                const { data: xpData, error } = await supabase
+                    .from('profiles')
+                    .select('full_name, xp')
+                    .order('xp', { ascending: false })
+                    .limit(50)
+                data = xpData
+            }
+
+            body.innerHTML = ''
+            data.forEach((player, i) => {
+                const row = document.createElement('tr')
+                row.style.borderBottom = '1px solid var(--border)'
+                row.className = 'fade-in-up'
+                row.style.animationDelay = `${i * 0.05}s`
+
+                const isTop3 = i < 3
+                const rankColor = i === 0 ? 'var(--accent-green)' : i === 1 ? 'var(--accent-cyan)' : i === 2 ? 'var(--accent-pink)' : 'var(--text-muted)'
+
+                row.innerHTML = `
+                    <td style="padding:20px; font-weight:800; color:${rankColor}; font-size:1.1rem; width:80px;">
+                        ${i + 1}
+                    </td>
+                    <td style="padding:20px;">
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <div style="width:32px; height:32px; border-radius:8px; background:var(--bg-card); display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:700;">
+                                ${getInitials(player.full_name)}
+                            </div>
+                            <span style="font-weight:600;">${player.full_name}</span>
+                        </div>
+                    </td>
+                    <td style="padding:20px; text-align:right; font-family:var(--font-mono); font-weight:700; color:var(--accent-green);">
+                        ${player.xp}
+                    </td>
+                `
+                body.appendChild(row)
+            })
+        }
+
+        function switchTab(tab) {
+            document.getElementById('tab-xp').classList.toggle('active', tab === 'xp')
+            document.getElementById('tab-scans').classList.toggle('active', tab === 'scans')
+            document.getElementById('stat-col-header').innerText = tab === 'xp' ? 'XP' : 'Connections'
+            loadLeaderboard(tab)
+        }
+
+        init()
+    </script>
+</body>
+
+</html>

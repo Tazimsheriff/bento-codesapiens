@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Setup Profile – CodeSapiens Bingo</title>
+    <title>Setup Profile – CyberExplore TEMS</title>
     <meta name="description" content="Complete your profile to join the CodeSapiens Networking Bingo." />
     <link rel="icon" type="image/svg+xml"
         href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>" />
@@ -23,7 +23,10 @@
 
             <!-- Header -->
             <div style="text-align:center; margin-bottom:32px;">
-                <div class="hero-logo" style="width:64px; height:64px; font-size:28px; margin:0 auto 16px;">🎯</div>
+                <div class="hero-logo" style="width:64px; height:64px; margin:0 auto 16px; overflow:hidden;">
+                    <img src="/public/assets/logo.png" alt="IEEE TEMS Logo"
+                        style="width:100%; height:100%; object-fit:contain;">
+                </div>
                 <h1 style="font-size:1.8rem; margin-bottom:8px;">Complete Your Profile</h1>
                 <p style="color:var(--text-secondary); font-size:0.9rem;">
                     Set up your profile to get your personal QR code and start playing.
@@ -45,11 +48,6 @@
                             autocomplete="url" required />
                     </div>
 
-                    <div class="input-group">
-                        <label for="github-url">GitHub Profile URL *</label>
-                        <input type="url" id="github-url" placeholder="https://github.com/yourname" autocomplete="url"
-                            required />
-                    </div>
 
                     <div id="form-error"
                         style="display:none; padding:12px 16px; background:rgba(255,71,87,0.08); border:1px solid rgba(255,71,87,0.3); border-radius:10px; color:var(--error); font-size:0.85rem;">
@@ -94,7 +92,6 @@
         document.getElementById('save-btn').addEventListener('click', async () => {
             const fullName = document.getElementById('full-name').value.trim()
             const linkedinUrl = document.getElementById('linkedin-url').value.trim()
-            const githubUrl = document.getElementById('github-url').value.trim()
             const errorEl = document.getElementById('form-error')
 
             // Validation
@@ -106,15 +103,11 @@
                 showError('Please enter a valid LinkedIn profile URL (e.g. https://linkedin.com/in/yourname)')
                 return
             }
-            if (!githubUrl || !isValidUrl(githubUrl) || !isValidGitHub(githubUrl)) {
-                showError('Please enter a valid GitHub profile URL (e.g. https://github.com/yourname)')
-                return
-            }
 
             errorEl.style.display = 'none'
             setLoading(true)
 
-            const { data, error } = await saveProfile(fullName, linkedinUrl, githubUrl)
+            const { data, error } = await saveProfile(fullName, linkedinUrl)
 
             setLoading(false)
 

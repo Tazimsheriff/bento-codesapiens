@@ -72,9 +72,14 @@ export async function signOut() {
 }
 
 // Save user profile
-export async function saveProfile(fullName, linkedinUrl, githubUrl) {
+export async function saveProfile(fullName, linkedinUrl) {
     const session = await getSession()
     if (!session) return { error: 'Not authenticated' }
+
+    // Generate a secure random token for the QR identity
+    const qrToken = (typeof crypto.randomUUID === 'function')
+        ? crypto.randomUUID()
+        : Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
     const { data, error } = await supabase
         .from('profiles')
@@ -82,7 +87,9 @@ export async function saveProfile(fullName, linkedinUrl, githubUrl) {
             id: session.user.id,
             full_name: fullName,
             linkedin_url: linkedinUrl,
-            github_url: githubUrl
+            qr_token: qrToken,
+            xp: 0,
+            is_admin: false
         })
         .select()
         .single()
