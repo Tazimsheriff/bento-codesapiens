@@ -9,6 +9,8 @@ export default defineConfig({
                 onboarding: resolve(__dirname, 'onboarding.html'),
                 bingo: resolve(__dirname, 'bingo.html'),
                 network: resolve(__dirname, 'network.html'),
+                leaderboard: resolve(__dirname, 'leaderboard.html'),
+                admin: resolve(__dirname, 'admin.html'),
             }
         }
     },
